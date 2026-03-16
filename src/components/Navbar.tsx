@@ -14,11 +14,11 @@ export default function Navbar() {
 
   return (
     <nav
-      className="w-full px-6 py-4 flex items-center gap-6 border-b"
+      className="w-full px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-b"
       style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
     >
       <span
-        className="text-lg font-bold mr-4 tracking-tight"
+        className="text-lg font-bold tracking-tight"
         style={{ color: 'var(--primary)', fontFamily: 'Lusitana, serif' }}
       >
         🥾 Retkiapuri

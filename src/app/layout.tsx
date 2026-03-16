@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import ClientLayout from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
   title: "Retkiapuri",
@@ -15,10 +14,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fi">
-      <body className="antialiased flex flex-col min-h-screen">
-        <Navbar />
-        {children}
-        <Footer />
+      <body className="antialiased overflow-x-hidden">
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

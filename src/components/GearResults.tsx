@@ -154,7 +154,7 @@ export default function GearResults({ onReset }: GearResultsProps) {
         className="rounded-xl px-4 py-3 text-xs leading-relaxed"
         style={{ background: '#fdf6e3', border: '1px solid #e8d8a0', color: '#7a6a30' }}
       >
-        ⚠️ <strong>Huomio:</strong> Tämä lista on suuntaa-antava ehdotus. Älä luota siihen sokeasti — arvioi aina itse kohteen olosuhteet, sääennuste ja oma kokemustasosi ennen retkelle lähtöä.
+        ⚠️ <strong>Huomio:</strong> Tämä lista on demo, eivätkä käyttäjän vastaukset vaikuta sisältöön. Älä luota siihen sokeasti — arvioi aina itse kohteen olosuhteet, sääennuste ja oma kokemustasosi ennen retkelle lähtöä.
       </div>
 
       {/* Overall progress */}

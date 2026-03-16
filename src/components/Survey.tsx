@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import KohdeQuestion from './questions/KohdeQuestion';
 import AjankohtaQuestion from './questions/AjankohtaQuestion';
 import YopymisQuestion from './questions/YopymisQuestion';
 import MatkaTiedotQuestion, { MatkaTiedotValue } from './questions/MatkaTiedotQuestion';
 import RuuanvalmistusQuestion from './questions/RuuanvalmistusQuestion';
-import GearResults from './GearResults';
 
 // ---------------------------------------------------------------------------
 // Question definitions
@@ -35,11 +35,12 @@ type Answers = Record<string, AnswerValue>;
 // Survey component
 // ---------------------------------------------------------------------------
 
-type Phase = 'survey' | 'thinking' | 'results';
+type Phase = 'survey' | 'thinking';
 
 const THINKING_MS = 2000;
 
 export default function Survey() {
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
   const [phase, setPhase] = useState<Phase>('survey');
@@ -56,7 +57,7 @@ export default function Survey() {
       : currentQuestion.type === 'yopymis' || currentQuestion.type === 'ruuanvalmistus'
       ? []
       : currentQuestion.type === 'matkatiedot'
-      ? { days: null, km: null }
+      ? { days: 5, km: 10 }
       : null;
 
   const progressPercent = Math.round((currentIndex / total) * 100);
@@ -68,7 +69,11 @@ export default function Survey() {
   const handleContinue = () => {
     const confirmedAnswers = {
       ...answers,
-      [currentQuestion.id]: currentQuestion.id in answers ? answers[currentQuestion.id] : null,
+      [currentQuestion.id]: currentQuestion.id in answers
+        ? answers[currentQuestion.id]
+        : currentQuestion.type === 'matkatiedot'
+        ? { days: 5, km: 10 }
+        : null,
     };
     setAnswers(confirmedAnswers);
 
@@ -89,19 +94,15 @@ export default function Survey() {
       setThinkProgress(pct);
       if (pct >= 100) {
         clearInterval(intervalRef.current!);
-        setPhase('results');
+        if (!localStorage.getItem('retkiapuri-checklist')) {
+          localStorage.setItem('retkiapuri-checklist', '[]');
+        }
+        router.push('/matkalista');
       }
     }, 30);
   };
 
   useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
-
-  const handleReset = () => {
-    setPhase('survey');
-    setCurrentIndex(0);
-    setAnswers({});
-    setThinkProgress(0);
-  };
 
   // ------------------------------------------------------------------
   // Thinking state
@@ -133,13 +134,6 @@ export default function Survey() {
         </div>
       </div>
     );
-  }
-
-  // ------------------------------------------------------------------
-  // Results state
-  // ------------------------------------------------------------------
-  if (phase === 'results') {
-    return <GearResults onReset={handleReset} />;
   }
 
   // ------------------------------------------------------------------

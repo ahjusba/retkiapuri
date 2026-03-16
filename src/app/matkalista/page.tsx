@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import GearResults from '@/components/GearResults';
 
@@ -8,17 +9,16 @@ const LS_KEY = 'retkiapuri-checklist';
 
 function readHasData(): boolean {
   try {
-    const stored = localStorage.getItem(LS_KEY);
-    const parsed = stored ? (JSON.parse(stored) as string[]) : [];
-    return parsed.length > 0;
+    return localStorage.getItem(LS_KEY) !== null;
   } catch {
     return false;
   }
 }
 
 export default function MatkalistaPage() {
+  const router = useRouter();
   // useState with a lazy initializer runs only on the client, after hydration
-  const [hasData, setHasData] = useState<boolean>(() => {
+  const [hasData] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return readHasData();
   });
@@ -62,7 +62,10 @@ export default function MatkalistaPage() {
       style={{ background: 'var(--background)' }}
     >
       <div className="w-full max-w-lg mx-auto">
-        <GearResults onReset={() => setHasData(false)} />
+        <GearResults onReset={() => {
+          localStorage.removeItem(LS_KEY);
+          router.push('/');
+        }} />
       </div>
     </main>
   );
