@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import ToggleQuestion from './questions/ToggleQuestion';
 import KohdeQuestion from './questions/KohdeQuestion';
+import AjankohtaQuestion from './questions/AjankohtaQuestion';
 
 // ---------------------------------------------------------------------------
 // Question definitions
 // ---------------------------------------------------------------------------
 
-type QuestionType = 'toggle' | 'kohde';
-type AnswerValue = boolean | string | null;
+type QuestionType = 'toggle' | 'kohde' | 'ajankohta';
+type AnswerValue = boolean | string | number | null;
 
 interface QuestionDef {
   id: string;
@@ -18,12 +19,13 @@ interface QuestionDef {
 }
 
 const QUESTIONS: QuestionDef[] = [
-  { id: 'q0', label: 'Valitse retkikohde', type: 'kohde' },
-  { id: 'q1', label: 'Onko matka useamman päivän mittainen?', type: 'toggle' },
-  { id: 'q2', label: 'Yövytäänkö matkalla?', type: 'toggle' },
-  { id: 'q3', label: 'Onko reitti merkitty maastoon?', type: 'toggle' },
-  { id: 'q4', label: 'Liikutaanko kansallispuiston alueella?', type: 'toggle' },
-  { id: 'q5', label: 'Osallistuuko matkalle lapsia?', type: 'toggle' },
+  { id: 'q0', label: 'Valitse retkikohde',                   type: 'kohde'     },
+  { id: 'q1', label: 'Valitse ajankohta',                    type: 'ajankohta' },
+  { id: 'q2', label: 'Onko matka useamman päivän mittainen?', type: 'toggle'    },
+  { id: 'q3', label: 'Yövytäänkö matkalla?',                  type: 'toggle'    },
+  { id: 'q4', label: 'Onko reitti merkitty maastoon?',       type: 'toggle'    },
+  { id: 'q5', label: 'Liikutaanko kansallispuiston alueella?', type: 'toggle'  },
+  { id: 'q6', label: 'Osallistuuko matkalle lapsia?',        type: 'toggle'    },
 ];
 
 type Answers = Record<string, AnswerValue>;
@@ -148,6 +150,12 @@ export default function Survey({ onSubmit }: SurveyProps) {
         {currentQuestion.type === 'kohde' && (
           <KohdeQuestion
             value={currentAnswer as string | null}
+            onChange={handleAnswer}
+          />
+        )}
+        {currentQuestion.type === 'ajankohta' && (
+          <AjankohtaQuestion
+            value={currentAnswer as number | null}
             onChange={handleAnswer}
           />
         )}
