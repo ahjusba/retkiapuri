@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import ToggleQuestion from './questions/ToggleQuestion';
+import { useEffect, useRef, useState } from 'react';
 import KohdeQuestion from './questions/KohdeQuestion';
 import AjankohtaQuestion from './questions/AjankohtaQuestion';
 import YopymisQuestion from './questions/YopymisQuestion';
 import MatkaTiedotQuestion, { MatkaTiedotValue } from './questions/MatkaTiedotQuestion';
+import RuuanvalmistusQuestion from './questions/RuuanvalmistusQuestion';
+import GearResults from './GearResults';
 
 // ---------------------------------------------------------------------------
 // Question definitions
 // ---------------------------------------------------------------------------
 
-type QuestionType = 'toggle' | 'kohde' | 'ajankohta' | 'yopymis' | 'matkatiedot';
+type QuestionType = 'kohde' | 'ajankohta' | 'matkatiedot' | 'yopymis' | 'ruuanvalmistus';
 type AnswerValue = boolean | string | number | string[] | MatkaTiedotValue | null;
 
 interface QuestionDef {
@@ -21,13 +22,11 @@ interface QuestionDef {
 }
 
 const QUESTIONS: QuestionDef[] = [
-  { id: 'q0', label: 'Valitse retkikohde',                     type: 'kohde'       },
-  { id: 'q1', label: 'Valitse ajankohta',                      type: 'ajankohta'   },
-  { id: 'q2', label: 'Matkan tiedot',                          type: 'matkatiedot' },
-  { id: 'q3', label: 'Yöpymistapa',                            type: 'yopymis'     },
-  { id: 'q4', label: 'Onko reitti merkitty maastoon?',         type: 'toggle'      },
-  { id: 'q5', label: 'Liikutaanko kansallispuiston alueella?', type: 'toggle'      },
-  { id: 'q6', label: 'Osallistuuko matkalle lapsia?',          type: 'toggle'      },
+  { id: 'q0', label: 'Valitse retkikohde', type: 'kohde'          },
+  { id: 'q1', label: 'Valitse ajankohta',  type: 'ajankohta'      },
+  { id: 'q2', label: 'Matkan tiedot',      type: 'matkatiedot'    },
+  { id: 'q3', label: 'Yöpymistapa',        type: 'yopymis'        },
+  { id: 'q4', label: 'Ruuanvalmistus',     type: 'ruuanvalmistus' },
 ];
 
 type Answers = Record<string, AnswerValue>;
@@ -36,30 +35,30 @@ type Answers = Record<string, AnswerValue>;
 // Survey component
 // ---------------------------------------------------------------------------
 
-interface SurveyProps {
-  onSubmit?: (answers: Answers) => void;
-}
+type Phase = 'survey' | 'thinking' | 'results';
 
-export default function Survey({ onSubmit }: SurveyProps) {
+const THINKING_MS = 2000;
+
+export default function Survey() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [phase, setPhase] = useState<Phase>('survey');
+  const [thinkProgress, setThinkProgress] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const total = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex];
   const isLast = currentIndex === total - 1;
+
   const currentAnswer: AnswerValue =
     currentQuestion.id in answers
       ? answers[currentQuestion.id]
-      : currentQuestion.type === 'toggle'
-      ? false
-      : currentQuestion.type === 'yopymis'
+      : currentQuestion.type === 'yopymis' || currentQuestion.type === 'ruuanvalmistus'
       ? []
       : currentQuestion.type === 'matkatiedot'
       ? { days: null, km: null }
       : null;
 
-  // Progress: how many questions have been completed (i.e. navigated past)
   const progressPercent = Math.round((currentIndex / total) * 100);
 
   const handleAnswer = (value: AnswerValue) => {
@@ -67,70 +66,95 @@ export default function Survey({ onSubmit }: SurveyProps) {
   };
 
   const handleContinue = () => {
-    const defaultValue: AnswerValue = currentQuestion.type === 'toggle' ? false : null;
     const confirmedAnswers = {
       ...answers,
-      [currentQuestion.id]: currentQuestion.id in answers ? answers[currentQuestion.id] : defaultValue,
+      [currentQuestion.id]: currentQuestion.id in answers ? answers[currentQuestion.id] : null,
     };
     setAnswers(confirmedAnswers);
 
     if (isLast) {
-      setSubmitted(true);
-      onSubmit?.(confirmedAnswers);
+      startThinking();
     } else {
       setCurrentIndex((prev) => prev + 1);
     }
   };
 
+  const startThinking = () => {
+    setThinkProgress(0);
+    setPhase('thinking');
+    const start = Date.now();
+    intervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.min(100, Math.round((elapsed / THINKING_MS) * 100));
+      setThinkProgress(pct);
+      if (pct >= 100) {
+        clearInterval(intervalRef.current!);
+        setPhase('results');
+      }
+    }, 30);
+  };
+
+  useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
+
+  const handleReset = () => {
+    setPhase('survey');
+    setCurrentIndex(0);
+    setAnswers({});
+    setThinkProgress(0);
+  };
+
   // ------------------------------------------------------------------
-  // Submitted state
+  // Thinking state
   // ------------------------------------------------------------------
-  if (submitted) {
+  if (phase === 'thinking') {
     return (
-      <div className="flex flex-col items-center gap-6 py-16 text-center">
-        <div className="flex items-center justify-center w-20 h-20 rounded-full" style={{background: '#d4edcf'}}>
-          <svg
-            className="w-10 h-10" style={{color: 'var(--primary)'}}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
+      <div className="flex flex-col items-center gap-8 py-16 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <span style={{ fontSize: '3rem' }}>🤔</span>
+          <h2 className="text-xl font-bold" style={{ color: 'var(--foreground)', fontFamily: 'Lusitana, serif' }}>
+            Lasketaan suosituksia…
+          </h2>
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>Hetki, analysoidaan vastauksiasi.</p>
         </div>
-        <h2 className="text-2xl font-bold" style={{color: 'var(--foreground)'}}>Vastaukset lähetetty!</h2>
-        <p className="max-w-sm" style={{color: 'var(--muted)'}}>
-          Tässä kohtaa näytettäisiin varustussuositukset vastausten perusteella.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            setSubmitted(false);
-            setCurrentIndex(0);
-            setAnswers({});
-          }}
-          className="mt-4 px-6 py-2 rounded-lg font-medium transition-colors" style={{background: 'var(--border)', color: 'var(--foreground)'}}
-        >
-          Aloita alusta
-        </button>
+        <div className="w-full max-w-sm flex flex-col gap-2">
+          <div className="w-full h-4 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${thinkProgress}%`,
+                background: 'var(--primary)',
+                transition: 'width 0.05s linear',
+              }}
+            />
+          </div>
+          <p className="text-xs tabular-nums text-right" style={{ color: 'var(--muted)' }}>
+            {thinkProgress}%
+          </p>
+        </div>
       </div>
     );
+  }
+
+  // ------------------------------------------------------------------
+  // Results state
+  // ------------------------------------------------------------------
+  if (phase === 'results') {
+    return <GearResults onReset={handleReset} />;
   }
 
   // ------------------------------------------------------------------
   // Survey flow
   // ------------------------------------------------------------------
   return (
-    <div className="flex flex-col w-full" style={{gap: 0}}>
+    <div className="flex flex-col w-full" style={{ gap: 0 }}>
 
-      {/* ── Fixed header: progress bar ── */}
+      {/* ── Progress bar ── */}
       <div className="flex flex-col gap-2 pb-6">
-        <div className="flex items-center justify-between text-sm font-medium" style={{color: 'var(--muted)'}}>
+        <div className="flex items-center justify-between text-sm font-medium" style={{ color: 'var(--muted)' }}>
           <span>Kysymys {currentIndex + 1} / {total}</span>
           <span>{progressPercent}% valmis</span>
         </div>
-        <div className="w-full h-5 rounded-full overflow-hidden" style={{background: 'var(--border)'}}>
+        <div className="w-full h-5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
           <div
             className="h-full rounded-full transition-all duration-500 ease-in-out"
             style={{ width: `${progressPercent}%`, background: 'var(--primary)' }}
@@ -138,65 +162,46 @@ export default function Survey({ onSubmit }: SurveyProps) {
         </div>
       </div>
 
-      {/* ── Question area (natural height) ── */}
+      {/* ── Question card ── */}
       <div
         className="rounded-2xl shadow-sm px-6 py-8 flex items-center justify-center"
-        style={{
-          background: 'var(--card)',
-          border: '1px solid var(--border)',
-        }}
+        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
       >
-        {currentQuestion.type === 'toggle' && (
-          <ToggleQuestion
-            label={currentQuestion.label}
-            value={currentAnswer as boolean}
-            onChange={handleAnswer}
-          />
-        )}
         {currentQuestion.type === 'kohde' && (
-          <KohdeQuestion
-            value={currentAnswer as string | null}
-            onChange={handleAnswer}
-          />
+          <KohdeQuestion value={currentAnswer as string | null} onChange={handleAnswer} />
         )}
         {currentQuestion.type === 'ajankohta' && (
-          <AjankohtaQuestion
-            value={currentAnswer as number | null}
-            onChange={handleAnswer}
-          />
-        )}
-        {currentQuestion.type === 'yopymis' && (
-          <YopymisQuestion
-            value={currentAnswer as string[]}
-            onChange={handleAnswer}
-          />
+          <AjankohtaQuestion value={currentAnswer as number | null} onChange={handleAnswer} />
         )}
         {currentQuestion.type === 'matkatiedot' && (
-          <MatkaTiedotQuestion
-            value={currentAnswer as MatkaTiedotValue}
-            onChange={handleAnswer}
-          />
+          <MatkaTiedotQuestion value={currentAnswer as MatkaTiedotValue} onChange={handleAnswer} />
+        )}
+        {currentQuestion.type === 'yopymis' && (
+          <YopymisQuestion value={currentAnswer as string[]} onChange={handleAnswer} />
+        )}
+        {currentQuestion.type === 'ruuanvalmistus' && (
+          <RuuanvalmistusQuestion value={currentAnswer as string[]} onChange={handleAnswer} />
         )}
       </div>
 
-      {/* Navigation */}
+      {/* ── Navigation ── */}
       <div className="flex items-center justify-between mt-6">
         <button
           type="button"
           disabled={currentIndex === 0}
           onClick={() => setCurrentIndex((prev) => prev - 1)}
-          className="px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed transition-colors" style={{color: 'var(--muted)'}}
+          className="px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          style={{ color: 'var(--muted)' }}
         >
           ← Takaisin
         </button>
-
         <button
           type="button"
           onClick={handleContinue}
           className="px-8 py-3 rounded-xl text-base font-semibold text-white transition-colors"
-            style={{background: 'var(--primary)'}}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--primary-hover)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'var(--primary)')}
+          style={{ background: 'var(--primary)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--primary-hover)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--primary)')}
         >
           {isLast ? 'Lähetä' : 'Jatka →'}
         </button>
