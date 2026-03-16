@@ -5,13 +5,14 @@ import ToggleQuestion from './questions/ToggleQuestion';
 import KohdeQuestion from './questions/KohdeQuestion';
 import AjankohtaQuestion from './questions/AjankohtaQuestion';
 import YopymisQuestion from './questions/YopymisQuestion';
+import MatkaTiedotQuestion, { MatkaTiedotValue } from './questions/MatkaTiedotQuestion';
 
 // ---------------------------------------------------------------------------
 // Question definitions
 // ---------------------------------------------------------------------------
 
-type QuestionType = 'toggle' | 'kohde' | 'ajankohta' | 'yopymis';
-type AnswerValue = boolean | string | number | string[] | null;
+type QuestionType = 'toggle' | 'kohde' | 'ajankohta' | 'yopymis' | 'matkatiedot';
+type AnswerValue = boolean | string | number | string[] | MatkaTiedotValue | null;
 
 interface QuestionDef {
   id: string;
@@ -20,13 +21,13 @@ interface QuestionDef {
 }
 
 const QUESTIONS: QuestionDef[] = [
-  { id: 'q0', label: 'Valitse retkikohde',                     type: 'kohde'     },
-  { id: 'q1', label: 'Valitse ajankohta',                      type: 'ajankohta' },
-  { id: 'q2', label: 'Yöpymistapa',                            type: 'yopymis'   },
-  { id: 'q3', label: 'Onko matka useamman päivän mittainen?',   type: 'toggle'    },
-  { id: 'q4', label: 'Onko reitti merkitty maastoon?',         type: 'toggle'    },
-  { id: 'q5', label: 'Liikutaanko kansallispuiston alueella?', type: 'toggle'    },
-  { id: 'q6', label: 'Osallistuuko matkalle lapsia?',          type: 'toggle'    },
+  { id: 'q0', label: 'Valitse retkikohde',                     type: 'kohde'       },
+  { id: 'q1', label: 'Valitse ajankohta',                      type: 'ajankohta'   },
+  { id: 'q2', label: 'Matkan tiedot',                          type: 'matkatiedot' },
+  { id: 'q3', label: 'Yöpymistapa',                            type: 'yopymis'     },
+  { id: 'q4', label: 'Onko reitti merkitty maastoon?',         type: 'toggle'      },
+  { id: 'q5', label: 'Liikutaanko kansallispuiston alueella?', type: 'toggle'      },
+  { id: 'q6', label: 'Osallistuuko matkalle lapsia?',          type: 'toggle'      },
 ];
 
 type Answers = Record<string, AnswerValue>;
@@ -54,6 +55,8 @@ export default function Survey({ onSubmit }: SurveyProps) {
       ? false
       : currentQuestion.type === 'yopymis'
       ? []
+      : currentQuestion.type === 'matkatiedot'
+      ? { days: null, km: null }
       : null;
 
   // Progress: how many questions have been completed (i.e. navigated past)
@@ -165,6 +168,12 @@ export default function Survey({ onSubmit }: SurveyProps) {
         {currentQuestion.type === 'yopymis' && (
           <YopymisQuestion
             value={currentAnswer as string[]}
+            onChange={handleAnswer}
+          />
+        )}
+        {currentQuestion.type === 'matkatiedot' && (
+          <MatkaTiedotQuestion
+            value={currentAnswer as MatkaTiedotValue}
             onChange={handleAnswer}
           />
         )}
